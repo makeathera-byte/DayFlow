@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     // Compress logs for AI
     const compressedLogs = logs
-      .map((log) => {
+      .map((log: ActivityLog) => {
         const category = log.categories?.name || "Other";
         const start = new Date(log.start_time).toLocaleTimeString("en-US", {
           hour: "numeric",

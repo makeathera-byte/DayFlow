@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
     const uniqueActivities = Array.from(
       new Set(
         (logs || [])
-          .map((log) => log.activity?.trim())
+          .map((log: { activity: string | null }) => log.activity?.trim())
           .filter((activity): activity is string => !!activity)
       )
     );
 
     // Sort by frequency (most used first), then alphabetically
     const activityCounts = new Map<string, number>();
-    (logs || []).forEach((log) => {
+    (logs || []).forEach((log: { activity: string | null }) => {
       const activity = log.activity?.trim();
       if (activity) {
         activityCounts.set(activity, (activityCounts.get(activity) || 0) + 1);
