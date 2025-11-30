@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
     user = authUser;
   } catch (error) {
     // If Supabase is not available, continue without auth checks
-    console.error("Supabase error in middleware:", error);
+    console.error("Supabase error in proxy:", error);
     return supabaseResponse;
   }
 
@@ -93,4 +93,5 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
+
 

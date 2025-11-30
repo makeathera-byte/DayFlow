@@ -146,6 +146,7 @@ export function ActivityInput() {
       // Reset form
       setActivity("");
       setContextSuggestion(null);
+      setSuggestionsOpen(false); // Close suggestions after logging
       
       // Refresh page data
       router.refresh();
@@ -178,6 +179,7 @@ export function ActivityInput() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      setSuggestionsOpen(false); // Close suggestions when Enter is pressed
       handleLogActivity();
     }
   };

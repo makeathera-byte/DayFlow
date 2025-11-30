@@ -95,3 +95,4 @@ If environment variables are missing:
 - ✅ Service role key should only be used server-side (already configured correctly)
 - ✅ API keys are not exposed to the frontend
 
+
