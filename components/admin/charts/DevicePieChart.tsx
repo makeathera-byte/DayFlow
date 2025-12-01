@@ -95,7 +95,9 @@ export function DevicePieChart({ data }: DevicePieChartProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ deviceLabel, count }) => {
+              label={({ payload, value }) => {
+                const count = value as number;
+                const deviceLabel = payload?.deviceLabel || payload?.device || "Unknown";
                 const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : "0";
                 return `${deviceLabel}: ${percentage}%`;
               }}
