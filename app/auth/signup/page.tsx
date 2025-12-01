@@ -85,7 +85,7 @@ export default function SignupPage() {
       if (signUpData.user) {
         try {
           // Normalize country - ensure it's a valid 2-character code
-          let countryToLog = country;
+          let countryToLog: string | undefined = country;
           if (countryToLog && countryToLog !== "unknown" && countryToLog !== null && countryToLog !== "") {
             countryToLog = countryToLog.toUpperCase().trim();
             if (countryToLog.length !== 2) {
