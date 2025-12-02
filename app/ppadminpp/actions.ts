@@ -20,8 +20,9 @@ export async function getTrafficStats() {
     const supabase = createAdminClient();
 
     const now = new Date();
+    // Use UTC for consistent date boundaries across all queries
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last7DaysUTCForVisits = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6, 0, 0, 0, 0));
     const last24hBefore = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
     // Visits last 24 hours (with error handling for missing table)
@@ -36,17 +37,28 @@ export async function getTrafficStats() {
           visitsError.message?.includes("schema cache")) {
         console.error("❌ Analytics tables not found. Error:", visitsError.message);
         // Return default values - don't throw so admin panel still loads
+        const nowForDefaults = new Date();
         return {
           visitsLast24h: 0,
           visitsChange24h: 0,
           uniqueVisitorsToday: 0,
           visitorsChange24h: 0,
           visitsLast7Days: Array.from({ length: 7 }, (_, i) => {
-            const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+            const date = new Date(Date.UTC(
+              nowForDefaults.getUTCFullYear(),
+              nowForDefaults.getUTCMonth(),
+              nowForDefaults.getUTCDate() - (6 - i),
+              0, 0, 0, 0
+            ));
             return { date: date.toISOString().split("T")[0], visits: 0 };
           }),
           visitorsLast7Days: Array.from({ length: 7 }, (_, i) => {
-            const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+            const date = new Date(Date.UTC(
+              nowForDefaults.getUTCFullYear(),
+              nowForDefaults.getUTCMonth(),
+              nowForDefaults.getUTCDate() - (6 - i),
+              0, 0, 0, 0
+            ));
             return { date: date.toISOString().split("T")[0], visitors: 0 };
           }),
           visitsByPage: [],
@@ -56,17 +68,28 @@ export async function getTrafficStats() {
       }
       console.error("Error fetching visits:", visitsError);
       // Return default values for other errors too
+      const nowForDefaults = new Date();
       return {
         visitsLast24h: 0,
         visitsChange24h: 0,
         uniqueVisitorsToday: 0,
         visitorsChange24h: 0,
         visitsLast7Days: Array.from({ length: 7 }, (_, i) => {
-          const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+          const date = new Date(Date.UTC(
+            nowForDefaults.getUTCFullYear(),
+            nowForDefaults.getUTCMonth(),
+            nowForDefaults.getUTCDate() - (6 - i),
+            0, 0, 0, 0
+          ));
           return { date: date.toISOString().split("T")[0], visits: 0 };
         }),
         visitorsLast7Days: Array.from({ length: 7 }, (_, i) => {
-          const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+          const date = new Date(Date.UTC(
+            nowForDefaults.getUTCFullYear(),
+            nowForDefaults.getUTCMonth(),
+            nowForDefaults.getUTCDate() - (6 - i),
+            0, 0, 0, 0
+          ));
           return { date: date.toISOString().split("T")[0], visitors: 0 };
         }),
         visitsByPage: [],
@@ -82,11 +105,11 @@ export async function getTrafficStats() {
     .gte("visited_at", last24hBefore.toISOString())
     .lt("visited_at", last24h.toISOString());
 
-  // Visits last 7 days (grouped by day)
+  // Visits last 7 days (grouped by day) - use UTC for consistent boundaries
   const { data: visits7Days } = await supabase
     .from("visits")
     .select("visited_at")
-    .gte("visited_at", last7Days.toISOString())
+    .gte("visited_at", last7DaysUTCForVisits.toISOString())
     .order("visited_at", { ascending: true });
 
   // Unique visitors today (distinct users) - use UTC for consistency
@@ -114,7 +137,13 @@ export async function getTrafficStats() {
       authenticatedUsers.add(visit.user_id);
     } else {
       // For anonymous, use date + device + country as unique identifier
-      const date = new Date(visit.visited_at).toISOString().split("T")[0];
+      // Use UTC date for consistency with query filters
+      const visitDate = new Date(visit.visited_at);
+      const date = new Date(Date.UTC(
+        visitDate.getUTCFullYear(),
+        visitDate.getUTCMonth(),
+        visitDate.getUTCDate()
+      )).toISOString().split("T")[0];
       anonymousVisitors.add(`${date}_${visit.device}_${visit.country}`);
     }
   });
@@ -139,7 +168,13 @@ export async function getTrafficStats() {
     if (visit.user_id) {
       authenticatedUsersYesterday.add(visit.user_id);
     } else {
-      const date = new Date(visit.visited_at).toISOString().split("T")[0];
+      // Use UTC date for consistency with query filters
+      const visitDate = new Date(visit.visited_at);
+      const date = new Date(Date.UTC(
+        visitDate.getUTCFullYear(),
+        visitDate.getUTCMonth(),
+        visitDate.getUTCDate()
+      )).toISOString().split("T")[0];
       anonymousVisitorsYesterday.add(`${date}_${visit.device}_${visit.country}`);
     }
   });
@@ -150,16 +185,26 @@ export async function getTrafficStats() {
     : 0;
 
   // Unique visitors last 7 days (for chart)
+  // Use UTC for consistent date boundaries
+  const last7DaysUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6, 0, 0, 0, 0));
+  
   const { data: allVisits7Days } = await supabase
     .from("visits")
     .select("user_id, visited_at, device, country")
-    .gte("visited_at", last7Days.toISOString())
+    .gte("visited_at", last7DaysUTC.toISOString())
     .order("visited_at", { ascending: true });
   
-  // Group unique visitors by day
+  // Group unique visitors by day (using UTC dates)
   const visitorsByDay: Record<string, Set<string>> = {};
   allVisits7Days?.forEach((visit) => {
-    const date = new Date(visit.visited_at).toISOString().split("T")[0];
+    // Convert to UTC date string for consistent grouping
+    const visitDate = new Date(visit.visited_at);
+    const date = new Date(Date.UTC(
+      visitDate.getUTCFullYear(),
+      visitDate.getUTCMonth(),
+      visitDate.getUTCDate()
+    )).toISOString().split("T")[0];
+    
     if (!visitorsByDay[date]) {
       visitorsByDay[date] = new Set();
     }
@@ -171,8 +216,14 @@ export async function getTrafficStats() {
     }
   });
   
+  // Generate 7-day array using UTC dates to match query
   const visitorsLast7Days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+    const date = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - (6 - i),
+      0, 0, 0, 0
+    ));
     const dateStr = date.toISOString().split("T")[0];
     return {
       date: dateStr,
@@ -180,27 +231,27 @@ export async function getTrafficStats() {
     };
   });
 
-  // Visits by page
+  // Visits by page (last 7 days)
   const { data: visitsByPage } = await supabase
     .from("visits")
     .select("path")
-    .gte("visited_at", last7Days.toISOString());
+    .gte("visited_at", last7DaysUTCForVisits.toISOString());
 
-  // Visits by device
+  // Visits by device (last 7 days)
   const { data: visitsByDevice, error: deviceError } = await supabase
     .from("visits")
     .select("device")
-    .gte("visited_at", last7Days.toISOString());
+    .gte("visited_at", last7DaysUTCForVisits.toISOString());
   
   if (deviceError) {
     console.error("Error fetching device data:", deviceError);
   }
 
-  // Visits by country
+  // Visits by country (last 7 days)
   const { data: visitsByCountry } = await supabase
     .from("visits")
     .select("country")
-    .gte("visited_at", last7Days.toISOString());
+    .gte("visited_at", last7DaysUTCForVisits.toISOString());
 
   // Process data
   const visitsLast24h = visits24h?.length || 0;
@@ -209,15 +260,27 @@ export async function getTrafficStats() {
     ? ((visitsLast24h - visitsLast24hBefore) / visitsLast24hBefore) * 100
     : 0;
 
-  // Group visits by day
+  // Group visits by day (using UTC dates for consistent grouping)
   const visitsByDay: Record<string, number> = {};
   visits7Days?.forEach((visit) => {
-    const date = new Date(visit.visited_at).toISOString().split("T")[0];
+    // Convert to UTC date string for consistent grouping
+    const visitDate = new Date(visit.visited_at);
+    const date = new Date(Date.UTC(
+      visitDate.getUTCFullYear(),
+      visitDate.getUTCMonth(),
+      visitDate.getUTCDate()
+    )).toISOString().split("T")[0];
     visitsByDay[date] = (visitsByDay[date] || 0) + 1;
   });
 
+  // Generate 7-day array using UTC dates to match query
   const visitsLast7Days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+    const date = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - (6 - i),
+      0, 0, 0, 0
+    ));
     const dateStr = date.toISOString().split("T")[0];
     return {
       date: dateStr,
@@ -268,13 +331,29 @@ export async function getTrafficStats() {
       throw error; // Re-throw migration errors
     }
     // Return default values on other errors
-    const now = new Date();
+    const nowForDefaults = new Date();
     return {
       visitsLast24h: 0,
       visitsChange24h: 0,
+      uniqueVisitorsToday: 0,
+      visitorsChange24h: 0,
       visitsLast7Days: Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+        const date = new Date(Date.UTC(
+          nowForDefaults.getUTCFullYear(),
+          nowForDefaults.getUTCMonth(),
+          nowForDefaults.getUTCDate() - (6 - i),
+          0, 0, 0, 0
+        ));
         return { date: date.toISOString().split("T")[0], visits: 0 };
+      }),
+      visitorsLast7Days: Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(Date.UTC(
+          nowForDefaults.getUTCFullYear(),
+          nowForDefaults.getUTCMonth(),
+          nowForDefaults.getUTCDate() - (6 - i),
+          0, 0, 0, 0
+        ));
+        return { date: date.toISOString().split("T")[0], visitors: 0 };
       }),
       visitsByPage: [],
       visitsByDevice: [],

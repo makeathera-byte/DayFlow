@@ -5,7 +5,11 @@ import { VisitorsChart } from "@/components/admin/charts/VisitorsChart";
 import { SignupChart } from "@/components/admin/charts/SignupChart";
 import { LogsChart } from "@/components/admin/charts/LogsChart";
 import { UserRetentionChart } from "@/components/admin/charts/UserRetentionChart";
+import { AdminAutoRefresh } from "@/components/admin/AdminAutoRefresh";
 import { redirect } from "next/navigation";
+
+// Revalidate every 5 minutes to ensure data stays fresh
+export const revalidate = 300;
 
 export default async function AdminOverviewPage() {
   let trafficStats, userStats, usageStats;
@@ -70,10 +74,11 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
+      <AdminAutoRefresh refreshInterval={5 * 60 * 1000} />
       <div>
         <h1 className="text-3xl font-bold">Admin Overview</h1>
         <p className="text-muted-foreground mt-1">
-          Real-time analytics and insights
+          Real-time analytics and insights (auto-refreshes every 5 minutes)
         </p>
       </div>
 
