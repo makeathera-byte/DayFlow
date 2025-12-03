@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ThemeSync } from "@/components/layout/ThemeSync";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { TimezoneDetector } from "@/components/dashboard/TimezoneDetector";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -88,6 +90,8 @@ export default function RootLayout({
             </div>
           </ThemeProvider>
         </ErrorBoundary>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
